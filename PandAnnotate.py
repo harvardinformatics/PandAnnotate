@@ -88,7 +88,6 @@ def blast6_import(tablefile,prefix,searchtype,header=None):
             
     blastframe=pd.DataFrame(framedata,columns=column_labels) 
     blastframe.set_index('queryname',drop=True,inplace=True)
-    print blastframe
     return blastframe
 
 def pfam_import(tablefile):
@@ -176,7 +175,6 @@ def get_transdecoder_orfs(predictpepfile):
             contig_frame=pd.DataFrame(orf_data,columns=['queryname','orfclass','orflen','strand'])
             orfs_frame=orfs_frame.append(contig_frame)
     orfs_frame.set_index('queryname',drop=True,inplace=True)   
-    print orfs_frame
     return orfs_frame
 
 
@@ -210,7 +208,6 @@ if  __name__=="__main__":
             
     print 'merging search and feature tables into final annotation table!'
     final_table=tscript_records.join(searchandles.values(),how='outer')
-    print final_table
     final_table.index.name='queryname'
     final_table.to_csv(opts.outfile,sep='\t',na_rep='NA')
     
