@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 from pandannotate import getParserByName
+import sys
 
 
 def make_transcripts_dataframe(fastafile):
@@ -22,7 +23,7 @@ def parse_control_file(controlfile):
         for line in fopen:
             fdict = dict(zip(keys, line.strip().split('\t')))
             filesdict[fdict['filename']] = fdict
-    return filesdict        
+    return filesdict
 
     
 def custom_import(tablefile, prefix, seperator='\t', index_column='queryname', header=None, columnlabels=None):
@@ -46,7 +47,15 @@ def custom_import(tablefile, prefix, seperator='\t', index_column='queryname', h
     return custom_table
 
 
-if __name__ == "__main__": 
+def make_source_dict(opts):
+    '''
+    Create the source data dictionary from the options
+    '''
+    if opts.cfile:
+        return parse_control_file(opts.cfile)
+
+
+def main():
     parser = argparse.ArgumentParser(description="annotation table builder for de novo transcriptome assemblies")
     parser.add_argument('-f', '--transcriptome_fasta', dest='fasta', type=str, help='fasta of assembly transcripts')
     parser.add_argument('-c', '--control_file', dest='cfile', type=str, help='tab-separated table of file names,table type, and prefix')
@@ -57,8 +66,11 @@ if __name__ == "__main__":
 
     searchandles = {}
 
-    sourcedict = parse_control_file(opts.cfile)
+    sourcedict = make_source_dict(opts)
     for sourcefile in sourcedict.keys():
+        if 'searchtype' not in sourcedict[sourcefile]:
+            print 'Cannot parse data for %s: no "searchtype" specified.' % sourcefile
+            continue
         searchtype = sourcedict[sourcefile]['searchtype']
         resultkey = sourcedict[sourcefile].get('prefix','') + searchtype
         try:
@@ -66,8 +78,13 @@ if __name__ == "__main__":
             searchandles[resultkey] = parser.parse(sourcefile, **sourcedict[sourcefile])
         except Exception as e:
             print 'Unable to parse %s: %s' % (searchtype,str(e))
-                        
+
     print 'merging search and feature tables into final annotation table!'
     final_table = tscript_records.join(searchandles.values(), how='outer')
     final_table.index.name = 'queryname'
     final_table.to_csv(opts.outfile, sep='\t', na_rep='NA')
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
