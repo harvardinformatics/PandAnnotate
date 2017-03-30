@@ -54,7 +54,7 @@ def parse(tablefile, **kwargs):
     with open(tablefile, 'r') as fopen:
         for line in fopen:
             linelist = line.strip().split()
-            if searchtype in ['blastx', 'blastp']:
+            if searchtype in ['blastp']:
                 linelist[0] = linelist[0].split('::')[1]
 
             querydict = dict(zip(column_labels, linelist))
