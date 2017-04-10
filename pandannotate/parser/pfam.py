@@ -41,6 +41,8 @@ def parse(tablefile, **kwargs):
     ]
     
     pfam_dict = dict()
+    pfam_reduced=open('pfamhits.out','w')
+    pfam_reduced.write('contig\ttarget\taccession\tseqEval\tdescription\n')
     with open(tablefile, 'r') as fopen:
         for i in range(3):
             fopen.readline()
@@ -62,23 +64,22 @@ def parse(tablefile, **kwargs):
             pfam_dict[id]['seqEval'].append(linedict['seqEval'])
             pfam_dict[id]['description'].append(linedict['description'])
 
-    pfam_frame = pd.DataFrame(columns=['queryname', 'targetname', 'target_accession', 'seqEval', 'description'])
-    
+    # construct empty data frame to hold boolean "Y" if a hit #
+    pfam_bool_frame=pd.DataFrame(columns=['queryname','pfamhit'])
+  
     for id in pfam_dict.keys():
-        targetname = ';'.join(pfam_dict[id]['targetname'])
-        accession = ';'.join(pfam_dict[id]['target_accession'])
-        Eval = ';'.join(pfam_dict[id]['seqEval'])
-        description = ';'.join(pfam_dict[id]['description'])
-        contig_data = {
-            'queryname': [id], 
-            'targetname': [targetname], 
-            'target_accession': [accession],
-            'seqEval': [Eval],
-            'description': [description]
-        }
-        contig_frame = pd.DataFrame(contig_data, columns=['queryname', 'targetname', 'target_accession', 'seqEval', 'description'])
-       
-        pfam_frame = pfam_frame.append(contig_frame)
-   
-    pfam_frame.set_index('queryname', drop=True, inplace=True)
-    return pfam_frame
+        # append bool hits to data frame for merging
+        hitdata = {'queryname': [id], 'pfamhit': ['Y']} 
+        hit_frame = pd.DataFrame(hitdata, columns=['queryname','pfamhit'])
+        pfam_bool_frame = pfam_bool_frame.append(hit_frame)
+        # write individual domain hits, 1 per row, to text file #
+        for i in range(len(pfam_dict[id]['targetname'])):
+            target = pfam_dict[id]['targetname'][i]
+            accession = pfam_dict[id]['target_accession'][i]
+            eval = pfam_dict[id]['seqEval'][i]
+            descrip = pfam_dict[id]['description'][i]    
+            pfam_reduced.write('%s\t%s\t%s\t%s\t%s\n' % (id,target,accession,eval,descrip))
+    
+    pfam_bool_frame.set_index('queryname',drop=True,inplace=True)    
+    pfam_reduced.close()
+    return pfam_bool_frame
