@@ -60,6 +60,8 @@ def main():
     parser.add_argument('-f', '--transcriptome_fasta', dest='fasta', type=str, help='fasta of assembly transcripts')
     parser.add_argument('-c', '--control_file', dest='cfile', type=str, help='tab-separated table of file names,table type, and prefix')
     parser.add_argument('-o', '--outtable', dest='outfile', type=str, help='name of file to write merged annotation table')
+    parser.add_argument('-s','--sprotmap',dest='sprotmap',type=str,help='name of swprot table of protein id,taxon, and gene id')
+    #parser.add_argument('-u','--unirefmap',dest='unimap',type=str,help='name of uniref table')
     opts = parser.parse_args()   
 
     tscript_records = make_transcripts_dataframe(opts.fasta)
