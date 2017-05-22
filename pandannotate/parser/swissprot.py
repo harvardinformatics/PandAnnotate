@@ -15,9 +15,9 @@ import pandas as pd
 
 def parse_swprot_headers(swprot_table=None):
     if swprot_table==None:
-        sw_table='/n/regal/informatics_public/ref/uniprot/swissprot/uniprot_sprot.fasta'
+        swprot_table='/n/regal/informatics_public/ref/uniprot/swissprot/uniprot_sprot.fasta'
    
-    fopen=open(uniprot_table,'r')
+    fopen=open(swprot_table,'r')
     
     swprot_dict={}
     
@@ -34,17 +34,23 @@ def parse_swprot_headers(swprot_table=None):
     for line in fopen:
         if line[0]=='>':
             linelist=line.strip().split()
-            db_uid_entname=linelist[0]
+            db_uid_entname=linelist[0][1:]
             valuesjoin=' '.join(linelist[1:])
             protein_name=valuesjoin.split('OS=')[0][:-1]
-            organism_name=valuesjoin.split('OS=')[1].split('GN=')[0][:-1]
-            gene_name=valuesjoin.split('GN=')[1].split('PE=')[0][:-1]
+            #print valuesjoin,valuesjoin.split('OS=')[1] 
+            if 'GN=' in valuesjoin.split('OS=')[1]:
+                organism_name=valuesjoin.split('OS=')[1].split('GN=')[0][:-1]
+                gene_name=valuesjoin.split('GN=')[1].split('PE=')[0][:-1]
+            else:
+                organism_name=valuesjoin.split('OS=')[1].split('PE=')[0][:-1]
+                gene_name='NA'
+
             protein_existence=valuesjoin.split('PE=')[1].split('SV=')[0][:-1]
             sequence_version=valuesjoin.split('SV=')[1]
 
             fields=[db_uid_entname,protein_name,organism_name,gene_name,protein_existence,sequence_version]
             datadict=dict(zip(column_labels,fields))
-            swprot_dict['db_uid_entname']=datadict
+            swprot_dict[db_uid_entname]=datadict
 
     framedata = dict(zip(column_labels, [[] for i in range(len(column_labels))]))
     for protein in swprot_dict.keys():

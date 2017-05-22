@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 from pandannotate import getParserByName
+from pandannotate.parser import swissprot.parse_swprot_headers
 import sys
 
 
@@ -24,6 +25,11 @@ def parse_control_file(controlfile):
             fdict = dict(zip(keys, line.strip().split('\t')))
             filesdict[fdict['filename']] = fdict
     return filesdict
+
+
+def add_swissprot_annotations(searchframe,swprotframe):
+    searchframe=searchframe.join(swprotframe,how='outer')
+    return searchframe   
 
     
 def custom_import(tablefile, prefix, seperator='\t', index_column='queryname', header=None, columnlabels=None):
@@ -60,11 +66,14 @@ def main():
     parser.add_argument('-f', '--transcriptome_fasta', dest='fasta', type=str, help='fasta of assembly transcripts')
     parser.add_argument('-c', '--control_file', dest='cfile', type=str, help='tab-separated table of file names,table type, and prefix')
     parser.add_argument('-o', '--outtable', dest='outfile', type=str, help='name of file to write merged annotation table')
-    parser.add_argument('-s','--sprotmap',dest='sprotmap',type=str,help='name of swprot table of protein id,taxon, and gene id')
-    #parser.add_argument('-u','--unirefmap',dest='unimap',type=str,help='name of uniref table')
+    parser.add_argument('-s','--sprotmap',dest='sprotmap',default=None,type=str,help='name of swprot table of protein id,taxon, and gene id')
     opts = parser.parse_args()   
 
     tscript_records = make_transcripts_dataframe(opts.fasta)
+    
+    if opts.sprot! = None:
+        swissprot_frame = swissprot.parse_swprot_headers(opts.swprotmap)
+        
 
     searchandles = {}
 
@@ -78,6 +87,15 @@ def main():
         try:
             parser = getParserByName(sourcedict[sourcefile]['searchtype'])
             searchandles[resultkey] = parser.parse(sourcefile, **sourcedict[sourcefile])
+
+            ### this adds swissprot gensymbol and specie hit into if search is blastx/p to swissprot
+            if 'swissprot' in sourcedict[sourcefile]['searchtype']:
+                try:
+                    swissprot_info_add = add_swissprot_annotations(searchandles[resultkey],swissprot_frame) 
+                    searchandles[resultkey] = swissprot_info_add          
+                except Exception as e:
+                    print 'Swissprot dataframe does not exist?: %s' % str(e)
+
         except Exception as e:
             print 'Unable to parse %s: %s' % (searchtype,str(e))
 

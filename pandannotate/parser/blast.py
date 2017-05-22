@@ -73,4 +73,5 @@ def parse(tablefile, **kwargs):
             
     blastframe = pd.DataFrame(framedata, columns=column_labels) 
     blastframe.set_index('queryname', drop=True, inplace=True)
+
     return blastframe
