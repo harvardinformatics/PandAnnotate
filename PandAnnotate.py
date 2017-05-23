@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+
 import argparse
 import pandas as pd
 from pandannotate import getParserByName
-from pandannotate.parser import swissprot.parse_swprot_headers
+from pandannotate.parser import swissprot
 import sys
+import traceback
 
 
 def make_transcripts_dataframe(fastafile):
@@ -28,7 +31,7 @@ def parse_control_file(controlfile):
 
 
 def add_swissprot_annotations(searchframe,swprotframe):
-    searchframe=searchframe.join(swprotframe,how='outer')
+    searchframe = searchframe.join(swprotframe,how='outer')
     return searchframe   
 
     
@@ -57,24 +60,29 @@ def make_source_dict(opts):
     '''
     Create the source data dictionary from the options
     '''
+    optsdict = {}
     if opts.cfile:
-        return parse_control_file(opts.cfile)
+        optsdict = parse_control_file(opts.cfile)
+    if opts.goa:
+        for file,options in optsdict.iteritems():
+            optsdict[file]['goa'] = True
+    return optsdict
 
 
 def main():
     parser = argparse.ArgumentParser(description="annotation table builder for de novo transcriptome assemblies")
-    parser.add_argument('-f', '--transcriptome_fasta', dest='fasta', type=str, help='fasta of assembly transcripts')
-    parser.add_argument('-c', '--control_file', dest='cfile', type=str, help='tab-separated table of file names,table type, and prefix')
-    parser.add_argument('-o', '--outtable', dest='outfile', type=str, help='name of file to write merged annotation table')
-    parser.add_argument('-s','--sprotmap',dest='sprotmap',default=None,type=str,help='name of swprot table of protein id,taxon, and gene id')
+    parser.add_argument('-f', '--transcriptome_fasta', dest='fasta', type=str, help='fasta of assembly transcripts',required=True)
+    parser.add_argument('-c', '--control_file', dest='cfile', type=str, help='tab-separated table of file names,table type, and prefix',required=True)
+    parser.add_argument('-o', '--outtable', dest='outfile', type=str, help='name of file to write merged annotation table',required=True)
+    parser.add_argument('-s', '--sprotmap',dest='sprotmap',default=None,type=str,help='name of swprot table of protein id,taxon, and gene id')
+    parser.add_argument('--goa',dest='goa',action='store_true',help='Do you want GOA gene symbols?')
     opts = parser.parse_args()   
 
     tscript_records = make_transcripts_dataframe(opts.fasta)
     
-    if opts.sprot! = None:
+    if opts.sprotmap is not None:
         swissprot_frame = swissprot.parse_swprot_headers(opts.swprotmap)
         
-
     searchandles = {}
 
     sourcedict = make_source_dict(opts)
@@ -98,6 +106,7 @@ def main():
 
         except Exception as e:
             print 'Unable to parse %s: %s' % (searchtype,str(e))
+            print traceback.format_exc()
 
     print 'merging search and feature tables into final annotation table!'
     final_table = tscript_records.join(searchandles.values(), how='outer')

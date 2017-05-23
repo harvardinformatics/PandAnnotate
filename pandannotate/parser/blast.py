@@ -12,6 +12,30 @@ created on March 23, 2017
 import pandas as pd
 
 
+def addGoa(blastframe,hitcol):
+    '''
+    Add GOA annotations to the blast data frame
+    '''
+    from goa import Store, GOALCHEMY_DRIVER, GOALCHEMY_USER, GOALCHEMY_PASSWORD, GOALCHEMY_HOST, GOALCHEMY_DATABASE
+    import tempfile
+    
+    # Write to a file
+    hitids = set(blastframe[[hitcol]])
+    tf = tempfile.NamedTemporaryFile(delete=False)
+    tf.write('\n'.join(hitids))
+    tfname = tf.name
+    tf.close()
+    
+    connectstring = '%s://%s:%s@%s/%s' % (GOALCHEMY_DRIVER,GOALCHEMY_USER,GOALCHEMY_PASSWORD,GOALCHEMY_HOST,GOALCHEMY_DATABASE)
+    store = Store(connectstring)
+    result = store.searchByIdListFile(tfname)
+    goaframe = pd.DataFrame(result,columns=['id','db_object_symbol'])
+    goaframe.reindex(columns=['id','db_object_symbol'])
+    
+    result = pd.merge(blastframe,goaframe,how='left',left_on=[hitcol],right_on=['id'])
+    return result
+
+
 def parse(tablefile, **kwargs):
     '''
     Converts BLAST to a data frame with a queryname index
@@ -26,6 +50,7 @@ def parse(tablefile, **kwargs):
     searchtype  = kwargs.get('searchtype')
     if prefix is None or prefix.strip() == '' or searchtype is None or searchtype.strip() == '':
         raise Exception('Cannot parse BLAST results without prefix and searchtype arguments')
+    goa         = kwargs.get('goa')
 
     # Setup column labels
     header = kwargs.get('header', None)
@@ -73,5 +98,11 @@ def parse(tablefile, **kwargs):
             
     blastframe = pd.DataFrame(framedata, columns=column_labels) 
     blastframe.set_index('queryname', drop=True, inplace=True)
+    print blastframe.columns.values.tolist()
+
+    if goa is not None:
+        hitcol = '%s_sseqid' % prefix
+        blastframe.reindex(columns=['queryname',hitcol])
+        blastframe = addGoa(blastframe,hitcol)
 
     return blastframe
