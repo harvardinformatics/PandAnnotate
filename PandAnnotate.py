@@ -4,8 +4,13 @@ import argparse
 import pandas as pd
 from pandannotate import getParserByName
 from pandannotate.parser import swissprot
-import sys
+import sys, os
 import traceback
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger()
+logger.setLevel(logging.getLevelName(os.environ.get('PANDANNOTATE_LOGLEVEL','ERROR')))
 
 
 def make_transcripts_dataframe(fastafile):
@@ -103,6 +108,7 @@ def main():
                     searchandles[resultkey] = swissprot_info_add          
                 except Exception as e:
                     print 'Swissprot dataframe does not exist?: %s' % str(e)
+                    logger.debug(traceback.format_exc())
 
         except Exception as e:
             print 'Unable to parse %s: %s' % (searchtype,str(e))

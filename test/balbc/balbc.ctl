@@ -1,0 +1,2 @@
+test_headclean_balbc_10mil_trinity.fasta.transdecoder.pep	transdecoder	tdec	
+blastx_uniref90_balbc_10mil_trinity1.outfmt6	blastx_uniref90	bxuni90

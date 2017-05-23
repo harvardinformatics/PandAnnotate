@@ -5,11 +5,14 @@ Parses BLAST output for annotator
 
 created on March 23, 2017
 @author: Aaron Kitzmiller <aaron_kitzmiller@harvard.edu>
-@copyright: 2016 The Presidents and Fellows of Harvard College. All rights reserved.
+@copyright: 2017 The Presidents and Fellows of Harvard College. All rights reserved.
 @license: GPL v2.0
 '''
 
 import pandas as pd
+import logging
+
+logger = logging.getLogger()
 
 
 def addGoa(blastframe,hitcol):
@@ -18,13 +21,14 @@ def addGoa(blastframe,hitcol):
     '''
     from goa import Store, GOALCHEMY_DRIVER, GOALCHEMY_USER, GOALCHEMY_PASSWORD, GOALCHEMY_HOST, GOALCHEMY_DATABASE
     import tempfile
-    
+
     # Write to a file
-    hitids = set(blastframe[[hitcol]])
+    hitids = set(blastframe[hitcol].get_values())
     tf = tempfile.NamedTemporaryFile(delete=False)
     tf.write('\n'.join(hitids))
     tfname = tf.name
     tf.close()
+    logger.debug('id tempfile is %s' % tfname)
     
     connectstring = '%s://%s:%s@%s/%s' % (GOALCHEMY_DRIVER,GOALCHEMY_USER,GOALCHEMY_PASSWORD,GOALCHEMY_HOST,GOALCHEMY_DATABASE)
     store = Store(connectstring)
@@ -33,6 +37,7 @@ def addGoa(blastframe,hitcol):
     goaframe.reindex(columns=['id','db_object_symbol'])
     
     result = pd.merge(blastframe,goaframe,how='left',left_on=[hitcol],right_on=['id'])
+    del result['id']
     return result
 
 
