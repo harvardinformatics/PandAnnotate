@@ -24,12 +24,8 @@ def getParserByName(parsername):
     Utility that will return the class object for a fully qualified 
     classname
     '''
-    if 'blast' in parsername:
-        parsername='blast'   
     modulename = 'pandannotate.parser.%s' % parsername
     try:
         return __import__(modulename,globals(),locals(),['parse'])
     except ImportError as e:
-        raise Exception( "Unable to import parser %s: %s" % (modulename, str(e)))
-       
-   
+        raise Exception("Unable to import parser %s: %s" % (modulename, str(e)))

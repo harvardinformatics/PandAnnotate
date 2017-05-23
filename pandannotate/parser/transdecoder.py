@@ -5,13 +5,13 @@ Parses transdecoder output for annotator
 
 created on March 23, 2017
 @author: Aaron Kitzmiller <aaron_kitzmiller@harvard.edu>
-@copyright: 2016 The Presidents and Fellows of Harvard College. All rights reserved.
+@copyright: 2017 The Presidents and Fellows of Harvard College. All rights reserved.
 @license: GPL v2.0
 '''
 import pandas as pd
 
 
-def parse(predictpepfile, **kwargs):
+def parse(dframe, predictpepfile, **kwargs):
     '''
     generates descriptive fields for 
     transdecoder predict function output
@@ -35,5 +35,6 @@ def parse(predictpepfile, **kwargs):
                 }
                 contig_frame = pd.DataFrame(orf_data, columns=['queryname', 'orfclass', 'orflen', 'strand'])
                 orfs_frame = orfs_frame.append(contig_frame)
-    orfs_frame.set_index('queryname', drop=True, inplace=True)   
-    return orfs_frame
+    orfs_frame.set_index('queryname', drop=True, inplace=True)
+    joined = dframe.join(orfs_frame,how='left')
+    return joined

@@ -15,46 +15,20 @@ import logging
 logger = logging.getLogger()
 
 
-def addGoa(blastframe,hitcol):
+def parse(dframe, tablefile, **kwargs):
     '''
-    Add GOA annotations to the blast data frame
+    Adds BLAST data to the frame using the queryname index
     '''
-    from goa import Store, GOALCHEMY_DRIVER, GOALCHEMY_USER, GOALCHEMY_PASSWORD, GOALCHEMY_HOST, GOALCHEMY_DATABASE
-    import tempfile
-
-    # Write to a file
-    hitids = set(blastframe[hitcol].get_values())
-    tf = tempfile.NamedTemporaryFile(delete=False)
-    tf.write('\n'.join(hitids))
-    tfname = tf.name
-    tf.close()
-    logger.debug('id tempfile is %s' % tfname)
-    
-    connectstring = '%s://%s:%s@%s/%s' % (GOALCHEMY_DRIVER,GOALCHEMY_USER,GOALCHEMY_PASSWORD,GOALCHEMY_HOST,GOALCHEMY_DATABASE)
-    store = Store(connectstring)
-    result = store.searchByIdListFile(tfname)
-    goaframe = pd.DataFrame(result,columns=['id','db_object_symbol'])
-    goaframe.reindex(columns=['id','db_object_symbol'])
-    
-    result = pd.merge(blastframe,goaframe,how='left',left_on=[hitcol],right_on=['id'])
-    del result['id']
-    return result
-
-
-def parse(tablefile, **kwargs):
-    '''
-    Converts BLAST to a data frame with a queryname index
-
-    Creates dictionary of query=key, hitdata=value
-    dictionary. If header is provided, must be a 
-    comma separated string
-    '''
+    logger.debug('Parsing blast data with file %s and kwargs %s' % (tablefile,str(kwargs)))
 
     # Check requireds
     prefix      = kwargs.get('prefix')
     searchtype  = kwargs.get('searchtype')
-    if prefix is None or prefix.strip() == '' or searchtype is None or searchtype.strip() == '':
-        raise Exception('Cannot parse BLAST results without prefix and searchtype arguments')
+    program     = kwargs.get('program')
+    if prefix is None or prefix.strip() == '' \
+        or searchtype is None or searchtype.strip() == '' \
+        or program is None or program.strip() == '':
+        raise Exception('Cannot parse BLAST results without prefix, program, and searchtype arguments')
     goa         = kwargs.get('goa')
 
     # Setup column labels
@@ -84,7 +58,7 @@ def parse(tablefile, **kwargs):
     with open(tablefile, 'r') as fopen:
         for line in fopen:
             linelist = line.strip().split()
-            if searchtype in ['blastp']:
+            if program in ['blastp']:
                 linelist[0] = linelist[0].split('::')[1]
 
             querydict = dict(zip(column_labels, linelist))
@@ -103,11 +77,10 @@ def parse(tablefile, **kwargs):
             
     blastframe = pd.DataFrame(framedata, columns=column_labels) 
     blastframe.set_index('queryname', drop=True, inplace=True)
-    print blastframe.columns.values.tolist()
 
-    if goa is not None:
+    if goa:
+        from pandannotate.parser import goannotator
         hitcol = '%s_sseqid' % prefix
-        blastframe.reindex(columns=['queryname',hitcol])
-        blastframe = addGoa(blastframe,hitcol)
+        blastframe = goannotator.parse(blastframe,hitcol=hitcol)
 
-    return blastframe
+    return dframe.join(blastframe,how='left')

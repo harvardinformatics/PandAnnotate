@@ -13,9 +13,10 @@ created on April 27, 2017
 """
 import pandas as pd
 
+
 def parse_swprot_headers(swprot_table=None):
-    if swprot_table==None:
-        swprot_table='/n/regal/informatics_public/ref/uniprot/swissprot/uniprot_sprot.fasta'
+    if swprot_table is None:
+        swprot_table = '/n/regal/informatics_public/ref/uniprot/swissprot/uniprot_sprot.fasta'
    
     fopen=open(swprot_table,'r')
     
@@ -61,5 +62,3 @@ def parse_swprot_headers(swprot_table=None):
     uniprotframe.set_index('DB|UID|EntName', drop=True, inplace=True)
     
     return uniprotframe
-
-
