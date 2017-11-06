@@ -79,7 +79,8 @@ def parse(tablefile, **kwargs):
     with open(tablefile, 'r') as fopen:
         for line in fopen:
             linelist = line.strip().split()
-            if searchtype in ['blastp']:
+            if ':' in linelist[0]:
+            #if searchtype in ['blastp']:
                 linelist[0] = linelist[0].split('::')[1]
 
             querydict = dict(zip(column_labels, linelist))
