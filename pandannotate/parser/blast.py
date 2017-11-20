@@ -58,7 +58,9 @@ def parse(dframe, tablefile, **kwargs):
     with open(tablefile, 'r') as fopen:
         for line in fopen:
             linelist = line.strip().split()
-            if program in ['blastp']:
+
+            # If this is a blastp that can be further annotated
+            if ':' in linelist[0]:
                 linelist[0] = linelist[0].split('::')[1]
 
             querydict = dict(zip(column_labels, linelist))
