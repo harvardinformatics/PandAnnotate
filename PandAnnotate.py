@@ -109,6 +109,7 @@ def main():
             print traceback.format_exc()
 
     print 'merging search and feature tables into final annotation table!'
+    #print searchandles.values()
     final_table = tscript_records.join(searchandles.values(), how='outer')
     final_table.index.name = 'queryname'
     final_table.to_csv(opts.outfile, sep='\t', na_rep='NA')

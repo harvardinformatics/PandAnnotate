@@ -10,29 +10,43 @@ created on March 23, 2017
 '''
 
 import pandas as pd
+import re
+import sys
 
 
-def addGoa(blastframe,hitcol):
+def addGoa(blastframe, hitcol):
     '''
     Add GOA annotations to the blast data frame
     '''
     from goa import Store, GOALCHEMY_DRIVER, GOALCHEMY_USER, GOALCHEMY_PASSWORD, GOALCHEMY_HOST, GOALCHEMY_DATABASE
     import tempfile
-    
+
     # Write to a file
-    hitids = set(blastframe[[hitcol]])
+    hitids = set(blastframe[hitcol])
     tf = tempfile.NamedTemporaryFile(delete=False)
-    tf.write('\n'.join(hitids))
+    unirefre = re.compile(r'(^UniRef\d+)_(.*)')
+    for hitid in hitids:
+        m = unirefre.match(hitid)
+        if m is not None:
+            line = "%s\t%s\n" % (m.group(1), m.group(0))
+            tf.write(line)
     tfname = tf.name
     tf.close()
-    
-    connectstring = '%s://%s:%s@%s/%s' % (GOALCHEMY_DRIVER,GOALCHEMY_USER,GOALCHEMY_PASSWORD,GOALCHEMY_HOST,GOALCHEMY_DATABASE)
+
+    connectstring = '%s://%s:%s@%s/%s?local_infile=1' % (GOALCHEMY_DRIVER, GOALCHEMY_USER, GOALCHEMY_PASSWORD, GOALCHEMY_HOST, GOALCHEMY_DATABASE)
     store = Store(connectstring)
     result = store.searchByIdListFile(tfname)
-    goaframe = pd.DataFrame(result,columns=['id','db_object_symbol'])
-    goaframe.reindex(columns=['id','db_object_symbol'])
-    
-    result = pd.merge(blastframe,goaframe,how='left',left_on=[hitcol],right_on=['id'])
+    if len(result) == 0 or result[0][0] is None:
+        print "No hit id matches in goa."
+        return blastframe
+
+    goaframe = pd.DataFrame(result, columns=['id', 'goa_symbol', 'go_terms'])
+
+    # goaframe.reindex(columns=['id'])
+    result = pd.merge(blastframe, goaframe, how='left', left_on=hitcol, right_on='id')
+    # result.set_index("queryname")
+    if result.empty:
+        print "The merged frame is empty."
     return result
 
 
@@ -80,7 +94,7 @@ def parse(tablefile, **kwargs):
         for line in fopen:
             linelist = line.strip().split()
             if ':' in linelist[0]:
-            #if searchtype in ['blastp']:
+                # if searchtype in ['blastp']:
                 linelist[0] = linelist[0].split('::')[1]
 
             querydict = dict(zip(column_labels, linelist))
@@ -91,19 +105,19 @@ def parse(tablefile, **kwargs):
                     blast_dict[querydict['queryname']] = querydict
             else:
                 blast_dict[querydict['queryname']] = querydict
-    
+
     framedata = dict(zip(column_labels, [[] for i in range(len(column_labels))]))
     for query in blast_dict.keys():
         for column_label in column_labels:
             framedata[column_label].append(blast_dict[query][column_label])        
-            
+
     blastframe = pd.DataFrame(framedata, columns=column_labels) 
     blastframe.set_index('queryname', drop=True, inplace=True)
     print blastframe.columns.values.tolist()
 
     if goa is not None:
         hitcol = '%s_sseqid' % prefix
-        blastframe.reindex(columns=['queryname',hitcol])
-        blastframe = addGoa(blastframe,hitcol)
+        blastframe.reindex(columns=['queryname', hitcol])
+        blastframe = addGoa(blastframe, hitcol)
 
     return blastframe
