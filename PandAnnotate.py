@@ -30,8 +30,8 @@ def parse_control_file(controlfile):
     return filesdict
 
 
-def add_swissprot_annotations(searchframe,swprotframe):
-    searchframe = searchframe.join(swprotframe,how='outer')
+def add_swissprot_annotations(searchframe, swprotframe):
+    searchframe = searchframe.join(swprotframe, how='outer')
     return searchframe   
 
     
@@ -64,18 +64,18 @@ def make_source_dict(opts):
     if opts.cfile:
         optsdict = parse_control_file(opts.cfile)
     if opts.goa:
-        for file,options in optsdict.iteritems():
+        for file, options in optsdict.iteritems():
             optsdict[file]['goa'] = True
     return optsdict
 
 
 def main():
     parser = argparse.ArgumentParser(description="annotation table builder for de novo transcriptome assemblies")
-    parser.add_argument('-f', '--transcriptome_fasta', dest='fasta', type=str, help='fasta of assembly transcripts',required=True)
-    parser.add_argument('-c', '--control_file', dest='cfile', type=str, help='tab-separated table of file names,table type, and prefix',required=True)
-    parser.add_argument('-o', '--outtable', dest='outfile', type=str, help='name of file to write merged annotation table',required=True)
-    parser.add_argument('-s', '--sprotmap',dest='sprotmap',default=None,type=str,help='name of swprot table of protein id,taxon, and gene id')
-    parser.add_argument('--goa',dest='goa',action='store_true',help='Do you want GOA gene symbols?')
+    parser.add_argument('-f', '--transcriptome_fasta', dest='fasta', type=str, help='fasta of assembly transcripts', required=True)
+    parser.add_argument('-c', '--control_file', dest='cfile', type=str, help='tab-separated table of file names,table type, and prefix', required=True)
+    parser.add_argument('-o', '--outtable', dest='outfile', type=str, help='name of file to write merged annotation table', required=True)
+    parser.add_argument('-s', '--sprotmap', dest='sprotmap', default=None, type=str, help='name of swprot table of protein id,taxon, and gene id')
+    parser.add_argument('--goa', dest='goa', action='store_true', help='Do you want GOA gene symbols?')
     opts = parser.parse_args()   
 
     tscript_records = make_transcripts_dataframe(opts.fasta)
@@ -91,7 +91,7 @@ def main():
             print 'Cannot parse data for %s: no "searchtype" specified.' % sourcefile
             continue
         searchtype = sourcedict[sourcefile]['searchtype']
-        resultkey = sourcedict[sourcefile].get('prefix','') + searchtype
+        resultkey = sourcedict[sourcefile].get('prefix', '') + searchtype
         try:
             parser = getParserByName(sourcedict[sourcefile]['searchtype'])
             searchandles[resultkey] = parser.parse(sourcefile, **sourcedict[sourcefile])
