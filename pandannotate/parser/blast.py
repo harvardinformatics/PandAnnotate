@@ -19,7 +19,7 @@ def parse(dframe, tablefile, **kwargs):
     '''
     Adds BLAST data to the frame using the queryname index
     '''
-    logger.debug('Parsing blast data with file %s and kwargs %s' % (tablefile,str(kwargs)))
+    logger.debug('Parsing blast data with file %s and kwargs %s' % (tablefile, str(kwargs)))
 
     # Check requireds
     prefix      = kwargs.get('prefix')
@@ -83,6 +83,6 @@ def parse(dframe, tablefile, **kwargs):
     if goa:
         from pandannotate.parser import goannotator
         hitcol = '%s_sseqid' % prefix
-        blastframe = goannotator.parse(blastframe,hitcol=hitcol)
+        blastframe = goannotator.parse(blastframe, hitcol=hitcol)
 
-    return dframe.join(blastframe,how='left')
+    return dframe.join(blastframe, how='left')

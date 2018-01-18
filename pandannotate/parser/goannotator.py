@@ -18,7 +18,7 @@ import tempfile
 logger = logging.getLogger()
 
 
-def parse(dframe,**kwargs):
+def parse(dframe, **kwargs):
     '''
     Add GOA annotations to the blast data frame
     '''
@@ -38,11 +38,11 @@ def parse(dframe,**kwargs):
     tf.close()
     logger.debug('id tempfile is %s' % tfname)
     
-    connectstring = '%s://%s:%s@%s/%s' % (GOALCHEMY_DRIVER,GOALCHEMY_USER,GOALCHEMY_PASSWORD,GOALCHEMY_HOST,GOALCHEMY_DATABASE)
+    connectstring = '%s://%s:%s@%s/%s' % (GOALCHEMY_DRIVER, GOALCHEMY_USER, GOALCHEMY_PASSWORD, GOALCHEMY_HOST, GOALCHEMY_DATABASE)
     store = Store(connectstring)
     result = store.searchByIdListFile(tfname)
-    goaframe = pd.DataFrame(result,columns=['id','db_object_symbol'])
+    goaframe = pd.DataFrame(result, columns=['id', 'db_object_symbol'])
     goaframe.set_index('id', drop=True, inplace=True)
     
-    result = dframe.merge(goaframe,how='left',left_on=[hitcol],right_index=True)
+    result = dframe.merge(goaframe, how='left', left_on=[hitcol], right_index=True)
     return result
