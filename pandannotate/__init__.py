@@ -25,11 +25,12 @@ def getParserByName(parsername):
     classname
     '''
     if 'blast' in parsername:
-        parsername='blast'   
+        parsername = 'blast'   
     modulename = 'pandannotate.parser.%s' % parsername
+    print "Module name is %s" % modulename
     try:
-        return __import__(modulename,globals(),locals(),['parse'])
+        return __import__(modulename, globals(), locals(), ['parse'])
     except ImportError as e:
-        raise Exception( "Unable to import parser %s: %s" % (modulename, str(e)))
+        raise Exception("Unable to import parser %s: %s" % (modulename, str(e)))
        
    
