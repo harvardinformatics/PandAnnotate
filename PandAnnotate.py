@@ -105,7 +105,6 @@ def main():
     opts = parser.parse_args()   
 
     dframe = make_transcripts_dataframe(opts.fasta)
-    logger.debug("Transcript dataframe columns: %s" % " ".join(dframe.columns.values.tolist()))
     
     # if opts.sprotmap is not None:
     #     swissprot_frame = swissprot.parse_swprot_headers(opts.swprotmap)
@@ -121,7 +120,6 @@ def main():
         try:
             parser = getParserByName(sourcedict[sourcefile]['searchtype'])
             dframe = parser.parse(dframe, sourcefile, **sourcedict[sourcefile])
-            logger.debug("Columns: %s" % " ".join(dframe.columns.values.tolist()))
         except Exception as e:
             print 'Unable to parse %s: %s' % (searchtype,str(e))
             logger.debug(traceback.format_exc())

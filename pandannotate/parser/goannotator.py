@@ -14,6 +14,7 @@ import pandas as pd
 import logging
 from goa import Store, GOALCHEMY_DRIVER, GOALCHEMY_USER, GOALCHEMY_PASSWORD, GOALCHEMY_HOST, GOALCHEMY_DATABASE
 import tempfile
+import sys
 
 logger = logging.getLogger()
 
@@ -31,7 +32,8 @@ def parse(dframe, **kwargs):
     db = kwargs.get('db')
     if db is None or db.strip() == '':
         raise Exception('Goa annotator requires the db parameter')
-
+  
+    logger.debug('Using %s as hitcol, %s as db' % (hitcol, db))
     # Write to a file
     hitids = set(dframe[hitcol].get_values())
     tf = tempfile.NamedTemporaryFile(delete=False)
@@ -46,7 +48,8 @@ def parse(dframe, **kwargs):
     result = store.searchByIdListFile(tfname)
     logger.debug('Length of result set is %d' % len(result))
     goaframe = pd.DataFrame(result, columns=['id', 'db_object_symbol', 'go_terms'])
-    goaframe.set_index('id', drop=True, inplace=True)
+    # goaframe.set_index('id', drop=True, inplace=True)
     logger.debug('Goa dataframe size is %d' % goaframe.size) 
-    result = dframe.merge(goaframe, how='left', left_on=[hitcol], right_index=True)
+
+    result = pd.merge(dframe, goaframe, how='left', left_on=hitcol, right_on='id')
     return result
