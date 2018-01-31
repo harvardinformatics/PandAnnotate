@@ -76,11 +76,11 @@ def parse(dframe, tablefile, **kwargs):
             framedata[column_label].append(blast_dict[query][column_label])        
             
     blastframe = pd.DataFrame(framedata, columns=column_labels) 
-    blastframe.set_index('queryname', drop=True, inplace=True)
+    blastframe.set_index(['queryname'], drop=True, inplace=True)
 
     if goa:
         from pandannotate.parser import goannotator
         hitcol = '%s_sseqid' % prefix
-        blastframe = goannotator.parse(blastframe,hitcol=hitcol)
+        blastframe = goannotator.parse(blastframe,hitcol=hitcol,db=kwargs.get('db'))
 
     return dframe.join(blastframe,how='left')

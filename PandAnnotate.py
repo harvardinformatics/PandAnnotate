@@ -102,10 +102,10 @@ def main():
     parser.add_argument('-c', '--control_file', dest='cfile', type=str, help='tab-separated table of file names,table type, and prefix', required=True)
     parser.add_argument('-o', '--outtable', dest='outfile', type=str, help='name of file to write merged annotation table', required=True)
     parser.add_argument('-s', '--sprotmap', dest='sprotmap', default=None, type=str, help='name of swprot table of protein id,taxon, and gene id')
-    parser.add_argument('--goa', dest='goa', action='store_true', help='Do you want GOA gene symbols?')
     opts = parser.parse_args()   
 
     dframe = make_transcripts_dataframe(opts.fasta)
+    logger.debug("Transcript dataframe columns: %s" % " ".join(dframe.columns.values.tolist()))
     
     # if opts.sprotmap is not None:
     #     swissprot_frame = swissprot.parse_swprot_headers(opts.swprotmap)
@@ -117,10 +117,11 @@ def main():
             continue
         searchtype = sourcedict[sourcefile]['searchtype']
         resultkey = sourcedict[sourcefile].get('prefix', '') + searchtype
+        logger.debug('searchtype %s, resultkey %s' % (searchtype, resultkey))
         try:
             parser = getParserByName(sourcedict[sourcefile]['searchtype'])
             dframe = parser.parse(dframe, sourcefile, **sourcedict[sourcefile])
-
+            logger.debug("Columns: %s" % " ".join(dframe.columns.values.tolist()))
         except Exception as e:
             print 'Unable to parse %s: %s' % (searchtype,str(e))
             logger.debug(traceback.format_exc())

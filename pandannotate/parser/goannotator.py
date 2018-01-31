@@ -26,14 +26,17 @@ def parse(dframe, **kwargs):
     hitcol = kwargs.get('hitcol')
     if hitcol is None or hitcol.strip() == '':
         raise Exception('Goa annotator requires hitcol parameter')
-
     if hitcol not in dframe:
         raise Exception('Hit column %s is not in the dataframe' % hitcol)
+    db = kwargs.get('db')
+    if db is None or db.strip() == '':
+        raise Exception('Goa annotator requires the db parameter')
 
     # Write to a file
     hitids = set(dframe[hitcol].get_values())
     tf = tempfile.NamedTemporaryFile(delete=False)
-    tf.write('\n'.join(hitids))
+    for hitid in hitids:
+        tf.write('%s\t%s\n' % (db,hitid))
     tfname = tf.name
     tf.close()
     logger.debug('id tempfile is %s' % tfname)
@@ -41,8 +44,9 @@ def parse(dframe, **kwargs):
     connectstring = '%s://%s:%s@%s/%s' % (GOALCHEMY_DRIVER, GOALCHEMY_USER, GOALCHEMY_PASSWORD, GOALCHEMY_HOST, GOALCHEMY_DATABASE)
     store = Store(connectstring)
     result = store.searchByIdListFile(tfname)
-    goaframe = pd.DataFrame(result, columns=['id', 'db_object_symbol'])
+    logger.debug('Length of result set is %d' % len(result))
+    goaframe = pd.DataFrame(result, columns=['id', 'db_object_symbol', 'go_terms'])
     goaframe.set_index('id', drop=True, inplace=True)
-    
+    logger.debug('Goa dataframe size is %d' % goaframe.size) 
     result = dframe.merge(goaframe, how='left', left_on=[hitcol], right_index=True)
     return result
