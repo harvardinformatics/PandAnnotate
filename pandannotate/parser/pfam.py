@@ -13,7 +13,7 @@ import re
 from collections import defaultdict
 
 
-def parse(tablefile, **kwargs):
+def parse(dframe, tablefile, **kwargs):
     column_labels = [
         'targetname',
         'target_accession',
@@ -41,7 +41,7 @@ def parse(tablefile, **kwargs):
     ]
     
     pfam_dict = dict()
-    pfam_reduced=open('pfamhits.out','w')
+    pfam_reduced = open('pfamhits.out','w')
     pfam_reduced.write('contig\ttarget\taccession\tseqEval\tdescription\n')
     with open(tablefile, 'r') as fopen:
         for i in range(3):
@@ -65,7 +65,7 @@ def parse(tablefile, **kwargs):
             pfam_dict[id]['description'].append(linedict['description'])
 
     # construct empty data frame to hold boolean "Y" if a hit #
-    pfam_bool_frame=pd.DataFrame(columns=['queryname','pfamhit'])
+    pfam_bool_frame = pd.DataFrame(columns=['queryname','pfamhit'])
   
     for id in pfam_dict.keys():
         # append bool hits to data frame for merging
@@ -82,4 +82,4 @@ def parse(tablefile, **kwargs):
     
     pfam_bool_frame.set_index('queryname',drop=True,inplace=True)    
     pfam_reduced.close()
-    return pfam_bool_frame
+    return dframe.join(pfam_bool_frame,how='left')

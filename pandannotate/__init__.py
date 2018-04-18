@@ -32,5 +32,3 @@ def getParserByName(parsername):
         return __import__(modulename, globals(), locals(), ['parse'])
     except ImportError as e:
         raise Exception("Unable to import parser %s: %s" % (modulename, str(e)))
-       
-   

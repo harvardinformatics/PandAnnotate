@@ -3,9 +3,13 @@
 import argparse
 import pandas as pd
 from pandannotate import getParserByName
-from pandannotate.parser import swissprot
-import sys
+import sys, os
 import traceback
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger()
+logger.setLevel(logging.getLevelName(os.environ.get('PANDANNOTATE_LOGLEVEL', 'ERROR')))
 
 
 def make_transcripts_dataframe(fastafile):
@@ -21,11 +25,37 @@ def make_transcripts_dataframe(fastafile):
 
 
 def parse_control_file(controlfile):
+    '''
+    Parse the control file into a dictionary.
+    Control file is of the form:
+    <filename>\t<parser name>\t<parameters>
+    where <parameters> is a lit of name=value pairs separated by a semi-colon
+    '''
+
     filesdict = dict()
-    keys = ['filename', 'searchtype', 'prefix', 'header']
+    badlines = []
     with open(controlfile, 'r') as fopen:
         for line in fopen:
-            fdict = dict(zip(keys, line.strip().split('\t')))
+            if line.strip() == '' or line.startswith('#'):
+                continue
+            fields = line.split('\t')
+            if len(fields) < 2:
+                badlines.append(line)
+                continue
+
+            fdict = {}
+
+            # Get requireds
+            fdict['filename'] = fields[0]
+            fdict['searchtype'] = fields[1]
+
+            # Get optionals
+            if len(fields) > 2:
+                optionals = fields[2].strip().split(';')
+                for optional in optionals:
+                    eles = optional.split('=')
+                    if len(eles) == 2:
+                        fdict[eles[0]] = eles[1]
             filesdict[fdict['filename']] = fdict
     return filesdict
 
@@ -63,9 +93,6 @@ def make_source_dict(opts):
     optsdict = {}
     if opts.cfile:
         optsdict = parse_control_file(opts.cfile)
-    if opts.goa:
-        for file, options in optsdict.iteritems():
-            optsdict[file]['goa'] = True
     return optsdict
 
 
@@ -75,16 +102,13 @@ def main():
     parser.add_argument('-c', '--control_file', dest='cfile', type=str, help='tab-separated table of file names,table type, and prefix', required=True)
     parser.add_argument('-o', '--outtable', dest='outfile', type=str, help='name of file to write merged annotation table', required=True)
     parser.add_argument('-s', '--sprotmap', dest='sprotmap', default=None, type=str, help='name of swprot table of protein id,taxon, and gene id')
-    parser.add_argument('--goa', dest='goa', action='store_true', help='Do you want GOA gene symbols?')
     opts = parser.parse_args()   
 
-    tscript_records = make_transcripts_dataframe(opts.fasta)
+    dframe = make_transcripts_dataframe(opts.fasta)
     
-    if opts.sprotmap is not None:
-        swissprot_frame = swissprot.parse_swprot_headers(opts.swprotmap)
+    # if opts.sprotmap is not None:
+    #     swissprot_frame = swissprot.parse_swprot_headers(opts.swprotmap)
         
-    searchandles = {}
-
     sourcedict = make_source_dict(opts)
     for sourcefile in sourcedict.keys():
         if 'searchtype' not in sourcedict[sourcefile]:
@@ -92,27 +116,17 @@ def main():
             continue
         searchtype = sourcedict[sourcefile]['searchtype']
         resultkey = sourcedict[sourcefile].get('prefix', '') + searchtype
+        logger.debug('searchtype %s, resultkey %s' % (searchtype, resultkey))
         try:
             parser = getParserByName(sourcedict[sourcefile]['searchtype'])
-            searchandles[resultkey] = parser.parse(sourcefile, **sourcedict[sourcefile])
-
-            ### this adds swissprot gensymbol and specie hit into if search is blastx/p to swissprot
-            if 'swissprot' in sourcedict[sourcefile]['searchtype']:
-                try:
-                    swissprot_info_add = add_swissprot_annotations(searchandles[resultkey],swissprot_frame) 
-                    searchandles[resultkey] = swissprot_info_add          
-                except Exception as e:
-                    print 'Swissprot dataframe does not exist?: %s' % str(e)
-
+            dframe = parser.parse(dframe, sourcefile, **sourcedict[sourcefile])
         except Exception as e:
             print 'Unable to parse %s: %s' % (searchtype,str(e))
-            print traceback.format_exc()
+            logger.debug(traceback.format_exc())
 
     print 'merging search and feature tables into final annotation table!'
-    #print searchandles.values()
-    final_table = tscript_records.join(searchandles.values(), how='outer')
-    final_table.index.name = 'queryname'
-    final_table.to_csv(opts.outfile, sep='\t', na_rep='NA')
+    dframe.index.name = 'queryname'
+    dframe.to_csv(opts.outfile, sep='\t', na_rep='NA')
     return 0
 
 
